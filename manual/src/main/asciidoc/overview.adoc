@@ -50,4 +50,4 @@ Here is a short list of provided features:
 * *OSGi frameworks*: Apache Karaf is not tightly coupled to one OSGi framework. By default, Apache Karaf runs with the Apache Felix
  Framework, but you can easily switch to Equinox (just change one property in a configuration file).
 
-image::karaf.png[]
+images::karaf.png[]
