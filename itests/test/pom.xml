@@ -24,7 +24,7 @@
     <parent>
         <groupId>org.apache.karaf.itests</groupId>
         <artifactId>itests</artifactId>
-        <version>4.3.0-SNAPSHOT</version>
+        <version>4.3.3-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -36,6 +36,18 @@
     <properties>
         <appendedResourcesDirectory>${basedir}/../etc/appended-resources</appendedResourcesDirectory>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.apache.karaf</groupId>
+                <artifactId>karaf-bom</artifactId>
+                <version>${project.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -197,12 +209,18 @@
         </dependency>
 
         <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-server</artifactId>
-            <version>${jetty.version}</version>
+            <groupId>org.eclipse.jetty.websocket</groupId>
+            <artifactId>websocket-client</artifactId>
+            <version>9.4.31.v20200723</version>
             <scope>test</scope>
         </dependency>
-        
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+            <version>9.4.31.v20200723</version>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
@@ -260,11 +278,6 @@
             <artifactId>karaf-websocket-example</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty.websocket</groupId>
-            <artifactId>websocket-client</artifactId>
-            <version>${jetty.version}</version>
-        </dependency>
     </dependencies>
 
     <build>
@@ -308,10 +321,14 @@
                         <spring31.version>${spring31.version}</spring31.version>
                         <spring43.version>${spring43.version}</spring43.version>
                         <spring52.version>${spring52.version}</spring52.version>
+                        <spring53.version>${spring53.version}</spring53.version>
                         <spring.security31.version>${spring.security31.version}</spring.security31.version>
                         <spring.security42.version>${spring.security42.version}</spring.security42.version>
                         <spring.security53.version>${spring.security53.version}</spring.security53.version>
+                        <spring.security54.version>${spring.security54.version}</spring.security54.version>
                         <activemq.version>${activemq.version}</activemq.version>
+                        <karaf.version>${project.version}</karaf.version>
+                        <pax.exam.configuration>file:src/test/resources/controlled-exam.properties</pax.exam.configuration>
                     </systemPropertyVariables>
                     <excludes>
                         <exclude>MavenTest</exclude>
@@ -365,9 +382,11 @@
                                 <spring31.version>${spring31.version}</spring31.version>
                                 <spring43.version>${spring43.version}</spring43.version>
                                 <spring52.version>${spring52.version}</spring52.version>
+                                <spring53.version>${spring53.version}</spring53.version>
                                 <spring.security31.version>${spring.security31.version}</spring.security31.version>
                                 <spring.security42.version>${spring.security42.version}</spring.security42.version>
                                 <spring.security53.version>${spring.security53.version}</spring.security53.version>
+                                <spring.security54.version>${spring.security54.version}</spring.security54.version>
                                 <activemq.version>${activemq.version}</activemq.version>
                     		</systemPropertyVariables>
                         </configuration>

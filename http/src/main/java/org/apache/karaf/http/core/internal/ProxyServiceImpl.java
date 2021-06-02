@@ -48,8 +48,10 @@ public class ProxyServiceImpl implements ProxyService {
         this.bundleContext = bundleContext;
         this.proxies = new HashMap<>();
         try {
-            Configuration configuration = configurationAdmin.getConfiguration(CONFIGURATION_PID);
-            update(configuration.getProperties());
+            Configuration configuration = configurationAdmin.getConfiguration(CONFIGURATION_PID, null);
+            if (configuration != null) {
+                update(configuration.getProcessedProperties(null));
+            }
         } catch (Exception e) {
             LOG.error("Can't load proxies", e);
         }
@@ -140,7 +142,7 @@ public class ProxyServiceImpl implements ProxyService {
         try {
             // get configuration
             Configuration configuration = configurationAdmin.getConfiguration(CONFIGURATION_PID);
-            Dictionary<String, Object> configurationProperties = configuration.getProperties();
+            Dictionary<String, Object> configurationProperties = configuration.getProcessedProperties(null);
             if (configurationProperties == null) {
                 configurationProperties = new Hashtable<>();
             }

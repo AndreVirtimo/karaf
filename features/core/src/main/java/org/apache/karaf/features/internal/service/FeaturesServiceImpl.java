@@ -66,6 +66,7 @@ import org.apache.karaf.features.RepositoryEvent;
 import org.apache.karaf.features.internal.download.DownloadManager;
 import org.apache.karaf.features.internal.download.DownloadManagers;
 import org.apache.karaf.features.internal.model.Features;
+import org.apache.karaf.features.internal.model.JacksonUtil;
 import org.apache.karaf.features.internal.model.JaxbUtil;
 import org.apache.karaf.features.internal.region.DigraphHelper;
 import org.apache.karaf.features.internal.service.BundleInstallSupport.FrameworkInfo;
@@ -355,7 +356,12 @@ public class FeaturesServiceImpl implements FeaturesService, Deployer.DeployCall
 
     @Override
     public Feature[] repositoryProvidedFeatures(URI uri) throws Exception {
-        Features features = JaxbUtil.unmarshal(uri.toURL().toExternalForm(), true);
+        Features features;
+        if (JacksonUtil.isJson(uri.toURL().toExternalForm())) {
+            features = JacksonUtil.unmarshal(uri.toURL().toExternalForm());
+        } else {
+            features = JaxbUtil.unmarshal(uri.toURL().toExternalForm(), true);
+        }
         Feature[] array = new Feature[features.getFeature().size()];
         return features.getFeature().toArray(array);
     }
@@ -1036,6 +1042,7 @@ public class FeaturesServiceImpl implements FeaturesService, Deployer.DeployCall
         Deployer.DeploymentRequest request = Deployer.DeploymentRequest.defaultDeploymentRequest();
         request.bundleUpdateRange = cfg.bundleUpdateRange;
         request.featureResolutionRange = cfg.featureResolutionRange;
+        request.autoRefresh = cfg.autoRefresh;
         request.serviceRequirements = ServiceRequirementsBehavior.fromString(cfg.serviceRequirements);
         request.updateSnaphots = SnapshotUpdateBehavior.fromString(cfg.updateSnapshots);
         request.globalRepository = globalRepository;
@@ -1090,7 +1097,7 @@ public class FeaturesServiceImpl implements FeaturesService, Deployer.DeployCall
         if (configurationAdmin != null) {
             Configuration config = configurationAdmin.getConfiguration("org.ops4j.pax.url.mvn", null);
             if (config != null) {
-                Dictionary<String, Object> cfg = config.getProperties();
+                Dictionary<String, Object> cfg = config.getProcessedProperties(null);
                 if (cfg != null) {
                     for (Enumeration<String> e = cfg.keys(); e.hasMoreElements(); ) {
                         String key = e.nextElement();

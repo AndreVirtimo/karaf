@@ -36,6 +36,8 @@ public class RestExampleTest extends BaseTest {
 
     private void setup() throws Exception {
         addFeaturesRepository("mvn:org.apache.karaf.examples/karaf-rest-example-features/" + System.getProperty("karaf.version") + "/xml");
+        installAndAssertFeature("http");
+        installAndAssertFeature("http-whiteboard");
     }
 
     private void verify() throws Exception {
@@ -45,6 +47,15 @@ public class RestExampleTest extends BaseTest {
         String output = executeCommand("booking:list --url " + location);
         System.out.println(output);
         assertContains("TST001", output);
+    }
+
+    private void verifyAttachments() throws Exception {
+        String location = "http://localhost:" + getHttpPort() + "/cxf/booking/all";
+
+        String output = executeCommand("booking:list-all --url " + location);
+        System.out.println(output);
+        assertContains("stream: application/octet-stream: important information", output);
+        assertContains("image: application/octet-stream: UGhvdG8=", output);
     }
 
     @Test
@@ -87,6 +98,18 @@ public class RestExampleTest extends BaseTest {
         installAndAssertFeature("karaf-rest-example-scr");
 
         installAndAssertFeature("karaf-rest-example-client-cxf");
+
+        verify();
+        verifyAttachments();
+    }
+
+    @Test
+    public void testScrWithJerseyClient() throws Exception {
+        setup();
+
+        installAndAssertFeature("karaf-rest-example-scr");
+
+        installAndAssertFeature("karaf-rest-example-client-jersey");
 
         verify();
     }

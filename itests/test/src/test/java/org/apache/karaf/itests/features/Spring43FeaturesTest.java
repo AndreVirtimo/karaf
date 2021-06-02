@@ -42,7 +42,6 @@ public class Spring43FeaturesTest extends BaseTest {
                         "mvn:org.apache.karaf.features/spring/" + version + "/xml/features, " +
                         "mvn:org.apache.karaf.features/spring-legacy/" + version + "/xml/features, " +
                         "mvn:org.apache.karaf.features/enterprise/" + version + "/xml/features, " +
-                        "mvn:org.apache.karaf.features/enterprise-legacy/" + version + "/xml/features, " +
                         "mvn:org.apache.karaf.features/standard/" + version + "/xml/features"));
         return result.toArray(new Option[result.size()]);
     }
@@ -99,17 +98,17 @@ public class Spring43FeaturesTest extends BaseTest {
 
     @Test
     public void installSpringWebFeature() throws Exception {
-        installAssertAndUninstallFeature("spring-web", System.getProperty("spring43.version"));
+        installAssertAndUninstallFeatures("pax-web-http", "spring-web/" + System.getProperty("spring43.version"));
     }
 
     @Test
     public void installSpringWebPortletFeature() throws Exception {
-        installAssertAndUninstallFeature("spring-web-portlet", System.getProperty("spring43.version"));
+        installAssertAndUninstallFeatures("pax-web-http", "spring-web-portlet/" + System.getProperty("spring43.version"));
     }
 
     @Test
     public void installSpringWebSocketFeature() throws Exception {
-        installAssertAndUninstallFeature("spring-websocket", System.getProperty("spring43.version"));
+        installAssertAndUninstallFeatures("pax-web-http", "spring-websocket/" + System.getProperty("spring43.version"));
     }
 
     // Spring Security

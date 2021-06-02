@@ -17,7 +17,10 @@ package org.apache.karaf.examples.camel.java;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.core.osgi.OsgiClassResolver;
+import org.apache.camel.core.osgi.OsgiDataFormatResolver;
 import org.apache.camel.core.osgi.OsgiDefaultCamelContext;
+import org.apache.camel.core.osgi.OsgiLanguageResolver;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.model.RouteDefinition;
 import org.osgi.framework.BundleContext;
@@ -35,14 +38,18 @@ import java.util.ArrayList;
 )
 public class CamelComponent {
 
-    private BundleContext bundleContext;
     private ModelCamelContext camelContext;
     private ServiceRegistration<CamelContext> serviceRegistration;
 
     @Activate
     public void activate(ComponentContext componentContext) throws Exception {
-        bundleContext = componentContext.getBundleContext();
-        camelContext = new OsgiDefaultCamelContext(bundleContext);
+        BundleContext bundleContext = componentContext.getBundleContext();
+        OsgiDefaultCamelContext osgiDefaultCamelContext = new OsgiDefaultCamelContext(bundleContext);
+        osgiDefaultCamelContext.setClassResolver(new OsgiClassResolver(camelContext, bundleContext));
+        osgiDefaultCamelContext.setDataFormatResolver(new OsgiDataFormatResolver(bundleContext));
+        osgiDefaultCamelContext.setLanguageResolver(new OsgiLanguageResolver(bundleContext));
+        osgiDefaultCamelContext.setName("context-example");
+        camelContext = osgiDefaultCamelContext;
         serviceRegistration = bundleContext.registerService(CamelContext.class, camelContext, null);
         camelContext.start();
         camelContext.addRoutes(new RouteBuilder() {
@@ -96,7 +103,7 @@ public class CamelComponent {
     public void deactivate() throws Exception {
         camelContext.stop();
         camelContext.removeRouteDefinitions(new ArrayList<RouteDefinition>(camelContext.getRouteDefinitions()));
-        bundleContext.ungetService(serviceRegistration.getReference());
+        serviceRegistration.unregister();
     }
 
 }

@@ -24,7 +24,7 @@
     <parent>
         <groupId>org.apache.karaf.assemblies.features</groupId>
         <artifactId>features</artifactId>
-        <version>4.3.0-SNAPSHOT</version>
+        <version>4.3.3-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -39,6 +39,18 @@
         <javax.annotation.version>1.3</javax.annotation.version>
         <geronimo.jaspic-spec.version>1.1</geronimo.jaspic-spec.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.apache.karaf</groupId>
+                <artifactId>karaf-bom</artifactId>
+                <version>${project.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <!-- Framework distribution -->
@@ -148,23 +160,6 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- jetty deps -->
-        <dependency>
-            <groupId>org.apache.servicemix.specs</groupId>
-            <artifactId>org.apache.servicemix.specs.activation-api-1.1</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>${servlet.spec.groupId}</groupId>
-            <artifactId>${servlet.spec.artifactId}</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>javax.mail</groupId>
-            <artifactId>mail</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
         <!-- httplite deps -->
         <dependency>
             <groupId>org.apache.felix</groupId>
@@ -244,11 +239,6 @@
         <dependency>
             <groupId>org.ops4j.pax.url</groupId>
             <artifactId>pax-url-commons</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>biz.aQute.bnd</groupId>
-            <artifactId>biz.aQute.bndlib</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -377,6 +367,11 @@
             <artifactId>org.apache.karaf.services.eventadmin</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.karaf</groupId>
+            <artifactId>org.apache.karaf.event</artifactId>
+            <scope>provided</scope>
+        </dependency>
 
         <!-- jasypt-encryption deps -->
         <dependency>
@@ -390,6 +385,13 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- Spring Security Crypto encryption deps -->
+        <dependency>
+            <groupId>org.apache.karaf.jaas</groupId>
+            <artifactId>org.apache.karaf.jaas.spring-security-crypto</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- scr deps -->
         <dependency>
             <groupId>org.apache.felix</groupId>
@@ -400,6 +402,21 @@
             <groupId>org.apache.karaf.scr</groupId>
             <artifactId>org.apache.karaf.scr.management</artifactId>
             <scope>provided</scope>
+        </dependency>
+
+        <!-- audit -->
+        <dependency>
+            <groupId>org.apache.karaf.audit</groupId>
+            <artifactId>org.apache.karaf.audit.core</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- manual -->
+        <dependency>
+            <groupId>org.apache.karaf</groupId>
+            <artifactId>manual</artifactId>
+            <scope>provided</scope>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 
@@ -446,6 +463,10 @@
                             <framework>
                                 <feature>framework</feature>
                             </framework>
+                            <features>
+                                <!-- webconsole, blueprint-web and jolokia features use requirement -->
+                                <feature>(?!(webconsole|blueprint-web|jolokia))*</feature>
+                            </features>
                             <ignoreMissingConditions>true</ignoreMissingConditions>
                         </configuration>
                     </execution>

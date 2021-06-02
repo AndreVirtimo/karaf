@@ -40,14 +40,6 @@ if not "%KARAF_TITLE%" == "" (
     title Karaf
 )
 
-rem Check/Set up some easily accessible MIN/MAX params for JVM mem usage
-if "%JAVA_MIN_MEM%" == "" (
-    set JAVA_MIN_MEM=128M
-)
-if "%JAVA_MAX_MEM%" == "" (
-    set JAVA_MAX_MEM=512M
-)
-
 goto BEGIN
 
 :warn
@@ -268,7 +260,7 @@ if not exist "%JAVA_HOME%\bin\server\jvm.dll" (
         echo For more details see http://java.sun.com/products/hotspot/whitepaper.html#client
     )
 )
-set DEFAULT_JAVA_OPTS=-Xms%JAVA_MIN_MEM% -Xmx%JAVA_MAX_MEM% -Dcom.sun.management.jmxremote  -XX:+UnlockDiagnosticVMOptions
+set DEFAULT_JAVA_OPTS=-XX:+UnlockDiagnosticVMOptions
 
 if "%JAVA_OPTS%" == "" set JAVA_OPTS=%DEFAULT_JAVA_OPTS%
 
@@ -338,7 +330,6 @@ if "%KARAF_PROFILER%" == "" goto :RUN
     if "%1" == "run" goto :EXECUTE_RUN
     if "%1" == "daemon" goto :EXECUTE_DAEMON
     if "%1" == "client" goto :EXECUTE_CLIENT
-    if "%1" == "clean" goto :EXECUTE_CLEAN
     if "%1" == "debug" goto :EXECUTE_DEBUG
     if "%1" == "debugs" goto :EXECUTE_DEBUGS
     goto :EXECUTE
@@ -386,20 +377,17 @@ if "%KARAF_PROFILER%" == "" goto :RUN
     shift
     goto :RUN_LOOP
 
-:EXECUTE_CLEAN
-    pushd "%KARAF_DATA%" && (rmdir /S /Q "%KARAF_DATA%" 2>nul & popd)
-    shift
-    goto :RUN_LOOP
-
 :EXECUTE_DEBUG
     if "%JAVA_DEBUG_OPTS%" == "" set JAVA_DEBUG_OPTS=%DEFAULT_JAVA_DEBUG_OPTS%
     set JAVA_OPTS=%JAVA_DEBUG_OPTS% %JAVA_OPTS%
+    set DEBUG=true
     shift
     goto :RUN_LOOP
 
 :EXECUTE_DEBUGS
     if "%JAVA_DEBUG_OPTS%" == "" set JAVA_DEBUG_OPTS=%DEFAULT_JAVA_DEBUGS_OPTS%
     set JAVA_OPTS=%JAVA_DEBUG_OPTS% %JAVA_OPTS%
+    set DEBUG=true
     shift
     goto :RUN_LOOP
 
@@ -407,6 +395,8 @@ if "%KARAF_PROFILER%" == "" goto :RUN
     SET ARGS=%1 %2 %3 %4 %5 %6 %7 %8
     rem Execute the Java Virtual Machine
     cd "%KARAF_BASE%"
+
+    if not "%DEBUG%" == "true" set JAVA_OPTS=%JAVA_NON_DEBUG_OPTS% %JAVA_OPTS%
 
     rem When users want to update the lib version of, they just need to create
     rem a lib.next directory and on the new restart, it will replace the current lib directory.
@@ -432,8 +422,8 @@ if "%KARAF_PROFILER%" == "" goto :RUN
             "%JAVA%" %JAVA_OPTS% %OPTS% ^
                 --add-reads=java.xml=java.logging ^
                 --add-exports=java.base/org.apache.karaf.specs.locator=java.xml,ALL-UNNAMED ^
-                --patch-module java.base=lib/endorsed/org.apache.karaf.specs.locator-@@project.version@@.jar ^
-                --patch-module java.xml=lib/endorsed/org.apache.karaf.specs.java.xml-@@project.version@@.jar ^
+                --patch-module java.base=%KARAF_HOME%\lib\endorsed\org.apache.karaf.specs.locator-@@project.version@@.jar ^
+                --patch-module java.xml=%KARAF_HOME%\lib\endorsed\org.apache.karaf.specs.java.xml-@@project.version@@.jar ^
                 --add-opens java.base/java.security=ALL-UNNAMED ^
                 --add-opens java.base/java.net=ALL-UNNAMED ^
                 --add-opens java.base/java.lang=ALL-UNNAMED ^

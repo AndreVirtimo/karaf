@@ -41,6 +41,8 @@ public class ServletExampleTest extends BaseTest {
 
     private void setup() throws Exception {
         addFeaturesRepository("mvn:org.apache.karaf.examples/karaf-servlet-example-features/" + System.getProperty("karaf.version") + "/xml");
+        installAndAssertFeature("http");
+        installAndAssertFeature("http-whiteboard");
     }
 
     private void verify() throws Exception {
@@ -82,6 +84,12 @@ public class ServletExampleTest extends BaseTest {
         setup();
 
         installAndAssertFeature("karaf-servlet-example-annotation");
+
+        String command = executeCommand("http:list");
+        while (!command.contains("servlet-example/multipart")) {
+            Thread.sleep(200);
+            command = executeCommand("http:list");
+        }
 
         verify();
     }

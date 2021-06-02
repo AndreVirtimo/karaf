@@ -20,7 +20,7 @@ import org.osgi.service.component.annotations.Component;
 
 @Component(
         property = {
-                "scheduler.name=example",
+                "scheduler.name=org.apache.karaf.example.scheduler.runnable",
                 "scheduler.period:Long=10",
                 "scheduler.times:Integer=5",
                 "scheduler.concurrent:Boolean=false"

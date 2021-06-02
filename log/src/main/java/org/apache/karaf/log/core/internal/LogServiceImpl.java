@@ -34,14 +34,14 @@ public class LogServiceImpl implements LogService, PaxAppender {
     static final String CONFIGURATION_PID = "org.ops4j.pax.logging";
 
     private final ConfigurationAdmin configAdmin;
-    private final CircularBuffer<PaxLoggingEvent> buffer;
+    private volatile CircularBuffer buffer;
     private List<PaxAppender> appenders;
-    
+
 
     public LogServiceImpl(ConfigurationAdmin configAdmin, int size) {
         this.configAdmin = configAdmin;
         this.appenders = new CopyOnWriteArrayList<>();
-        this.buffer = new CircularBuffer<>(size, PaxLoggingEvent.class);
+        this.buffer = new CircularBuffer(size);
     }
 
     private LogServiceInternal getDelegate(Dictionary<String, Object> config) {
@@ -78,7 +78,7 @@ public class LogServiceImpl implements LogService, PaxAppender {
         if (logger == null) {
             logger = LogServiceInternal.ROOT_LOGGER;
         }
-        return getDelegate(cfg.getProperties()).getLevel(logger);
+        return getDelegate(cfg.getProcessedProperties(null)).getLevel(logger);
     }
 
     public void setLevel(String level) {
@@ -101,7 +101,7 @@ public class LogServiceImpl implements LogService, PaxAppender {
 
         // Get config
         Configuration cfg = getConfiguration();
-        Dictionary<String, Object> props = cfg.getProperties();
+        Dictionary<String, Object> props = cfg.getProcessedProperties(null);
         // Update
         getDelegate(props).setLevel(logger, level);
         // Save
@@ -126,7 +126,7 @@ public class LogServiceImpl implements LogService, PaxAppender {
 
     @Override
     public Iterable<PaxLoggingEvent> getEvents() {
-        return buffer.getElements();
+        return buffer.getElements(buffer.maxSize());
     }
 
     @Override
@@ -135,10 +135,11 @@ public class LogServiceImpl implements LogService, PaxAppender {
     }
 
     @Override
-    public void clearEvents() {
-        buffer.clear();
+    public void clearEvents() { // just reset the buffer, reduce the number of "write locked" operations in the buffer
+        final int size = this.buffer.maxSize();
+        this.buffer = new CircularBuffer(size);
     }
-    
+
     @Override
     public PaxLoggingEvent getLastException(String logger) {
         PaxLoggingEvent throwableEvent = null;
@@ -150,11 +151,11 @@ public class LogServiceImpl implements LogService, PaxAppender {
                     &&(logger != null)
                     &&(checkIfFromRequestedLog(event, logger))) {
                 throwableEvent = event;
-              // Do not break, as we iterate from the oldest to the newest event
+                // Do not break, as we iterate from the oldest to the newest event
             } else if ((event.getThrowableStrRep() != null)&&(logger == null)) {
                 // now check if there has been no log passed in, and if this is an exception
                 // then save this exception and continue iterating from oldest to newest
-                throwableEvent = event;             
+                throwableEvent = event;
             }
         }
 
@@ -172,7 +173,7 @@ public class LogServiceImpl implements LogService, PaxAppender {
     }
 
     @Override
-    public synchronized void doAppend(PaxLoggingEvent event) {
+    public void doAppend(PaxLoggingEvent event) {
         event.getProperties(); // ensure MDC properties are copied
         KarafLogEvent eventCopy = new KarafLogEvent(event);
         this.buffer.add(eventCopy);

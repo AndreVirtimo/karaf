@@ -74,13 +74,7 @@ import org.apache.karaf.features.internal.download.DownloadManager;
 import org.apache.karaf.features.internal.download.Downloader;
 import org.apache.karaf.features.internal.download.StreamProvider;
 import org.apache.karaf.features.internal.download.impl.DownloadManagerHelper;
-import org.apache.karaf.features.internal.model.Bundle;
-import org.apache.karaf.features.internal.model.Conditional;
-import org.apache.karaf.features.internal.model.ConfigFile;
-import org.apache.karaf.features.internal.model.Dependency;
-import org.apache.karaf.features.internal.model.Feature;
-import org.apache.karaf.features.internal.model.Features;
-import org.apache.karaf.features.internal.model.JaxbUtil;
+import org.apache.karaf.features.internal.model.*;
 import org.apache.karaf.features.internal.model.processing.FeaturesProcessing;
 import org.apache.karaf.features.internal.service.Blacklist;
 import org.apache.karaf.features.internal.service.Deployer;
@@ -112,6 +106,7 @@ import org.slf4j.LoggerFactory;
 import static java.util.Collections.singletonList;
 import static java.util.Comparator.comparing;
 import static java.util.jar.JarFile.MANIFEST_NAME;
+import static java.util.stream.Collectors.toMap;
 import static org.apache.karaf.profile.assembly.Builder.Stage.Startup;
 
 /**
@@ -311,6 +306,8 @@ public class Builder {
     String generateConsistencyReport;
     String consistencyReportProjectName;
     String consistencyReportProjectVersion;
+    // KARAF-7074: for recursive/inner features, we should use parallelism by default
+    int resolverParallelism = Math.max(2, Runtime.getRuntime().availableProcessors());
 
     private ScheduledExecutorService executor;
     private DownloadManager manager;
@@ -561,6 +558,11 @@ public class Builder {
      */
     public Builder useReferenceUrls(boolean useReferenceUrls) {
         this.useReferenceUrls = useReferenceUrls;
+        return this;
+    }
+
+    public Builder resolverParallelism(final int resolverParallelism) {
+        this.resolverParallelism = resolverParallelism;
         return this;
     }
 
@@ -891,7 +893,7 @@ public class Builder {
         //
         MavenResolver resolver = createMavenResolver();
         manager = new CustomDownloadManager(resolver, executor, null, translatedUrls);
-        this.resolver = new ResolverImpl(new Slf4jResolverLog(LOGGER));
+        this.resolver = new ResolverImpl(new Slf4jResolverLog(LOGGER), resolverParallelism);
 
         //
         // Unzip KARs
@@ -2053,7 +2055,12 @@ public class Builder {
                                 }
                             }
                             try (InputStream is = provider.open()) {
-                                Features featuresModel = JaxbUtil.unmarshal(url, is, false);
+                                Features featuresModel;
+                                if (JacksonUtil.isJson(url)) {
+                                    featuresModel = JacksonUtil.unmarshal(url);
+                                } else {
+                                    featuresModel = JaxbUtil.unmarshal(url, is, false);
+                                }
                                 // always process according to processor configuration
                                 featuresModel.setBlacklisted(processor.isRepositoryBlacklisted(url));
                                 processor.process(featuresModel);
@@ -2130,6 +2137,31 @@ public class Builder {
 
         // System bundle will be single bundle installed with bundleId == 0
         BundleRevision systemBundle = getSystemBundle();
+        if (resolverParallelism > 1) {
+            return doResolve(manager, resolver, repositories, features, bundles, optionals, processor, systemBundle);
+        }
+        // let a chance to be sequential in case order is important with the current framework
+        return features.stream()
+                .flatMap(it -> {
+                    try {
+                        return doResolve(manager, resolver, repositories, singletonList(it), bundles, optionals, processor, systemBundle).entrySet().stream();
+                    } catch (final RuntimeException e) {
+                        throw e;
+                    } catch (final Exception e) {
+                        throw new IllegalStateException(e);
+                    }
+                })
+                .collect(toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a));
+    }
+
+    private Map<String, Integer> doResolve(DownloadManager manager,
+                                           Resolver resolver,
+                                           Collection<Features> repositories,
+                                           Collection<String> features,
+                                           Collection<String> bundles,
+                                           Collection<String> optionals,
+                                           FeaturesProcessor processor,
+                                           BundleRevision systemBundle) throws Exception {
         // Static distribution building callback and deployer that's used to deploy/collect startup-stage artifacts
         AssemblyDeployCallback callback = new AssemblyDeployCallback(manager, this, systemBundle, repositories, processor);
         Deployer deployer = new Deployer(manager, resolver, callback);
